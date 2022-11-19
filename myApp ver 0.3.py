@@ -14,19 +14,28 @@ query2 = (""" CREATE TABLE IF NOT EXISTS product
             ProductPrice     INTEGER      NOT NULL);""")
 
 query3 = """ CREATE TABLE IF NOT EXISTS cart (
-    Customer_id INTEGER REFERENCES user(UserId) ,
-    CartProductId INTEGER REFERENCES product(ProductId) );"""
+   Customer_id INTEGER REFERENCES user(UserId) ,
+   CartProductId INTEGER REFERENCES product(ProductId) );"""
+
+query5 = ()
+
+#query3 = """ CREATE TABLE IF NOT EXISTS cart (
+ #   Customer_id INTEGER REFERENCES user(UserId) ,
+  #  CartProductId INTEGER REFERENCES product(ProductId) );"""
 
 
-query4 = """ CREATE TABLE IF NOT EXISTS order (
-            OrderCustomerId INTEGER REFERENCES user(UserId) ,
-            OrderProductId INTEGER REFERENCES product(ProductId)
-            """
+#query5 = """ CREATE TABLE IF NOT EXISTS order
+ #       (OrderCustomerId INTEGER REFERENCES cart(Customer_id) ,
+  #          OrderProductId  INTEGER REFERENCES cart(CartProductId)  );"""
 
 
-my_cursor.execute(query)
-my_cursor.execute(query2)
-my_cursor.execute(query3)
+# my_cursor.execute(query)
+# my_cursor.execute(query2)
+#my_cursor.execute(query3)
+# my_cursor.execute("""CREATE TABLE IF NOT EXISTS norder
+# (OrderCustomerId INTEGER REFERENCES cart(Customer_Id),
+# OrderProductId INTEGER REFERENCES cart(CartProductId));""")
+
 
 
 class IdGenerator:
@@ -144,14 +153,14 @@ def main():
             print(row)
         main()
 
-    if user_input == 'viewspes':
+    if user_input == 'viewspec':
         sql_select_user = """ SELECT * From user"""
         my_cursor.execute(sql_select_user)
         list_of_tuples_user = my_cursor.fetchall()
         for inx, user in enumerate(list_of_tuples_user, start=1):
             print(inx, user)
         user_selector_input = int(input("Select user to view specific cart"))
-        my_cursor.execute("""SELECT cart.CartCustomer_id, cart.CartProductId, product.ProductName, product.ProductPrice
+        my_cursor.execute("""SELECT cart.Customer_id, cart.CartProductId, product.ProductName, product.ProductPrice
                             FROM cart
                             INNER JOIN product ON cart.CartProductId = product.ProductId
                             WHERE cart.Customer_id = ?""", (user_selector_input, ))
@@ -159,16 +168,43 @@ def main():
         list_of_specific_carts = my_cursor.fetchall()
         print(list_of_specific_carts)
         input_question = input(f"You have {len(list_of_specific_carts)} in your cart, check out? Commands: all, onebyone")
-        total_cart_value = 0
         if input_question == 'all':
             for x in list_of_specific_carts:
-                my_cursor.execute("""INSERT INTO (OrderProductId)""")
+                my_cursor.execute("""INSERT INTO norder (OrderCustomerId, OrderProductId) VALUES (?, ?)""", (x[0], x[1]))
+                my_cursor.execute("""DELETE FROM cart WHERE Customer_id = ? AND CartProductId = ?""", (x[0], x[1]))
+            connection.commit()
+            main()
+        if input_question == 'onebyone':
+            append_to_order_input = int(input("SELECT AN ITEM TO CHECK OUT"))
+            cart_item_found = False
+            for i in list_of_specific_carts:
+                if i[1] == append_to_order_input:
+                    cart_item_found = True
+                    my_cursor.execute("""INSERT INTO norder (OrderCustomerId, OrderProductId) VALUES (?, ?)""", (i[0], i[1]))
+                    my_cursor.execute("""DELETE FROM cart WHERE Customer_id = ? AND CartProductId = ?""", (i[0], i[1]))
+                    connection.commit()
+                    print("Done")
+                main()
+            if cart_item_found == False:
+                print("Error")
+                main()
 
-        append_to_order_input = int(input("SELECT AN ITEM TO CHECK OUT"))
-        for i in list_of_specific_carts:
-            if i[0] == append_to_order_input:
-                total_cart_value += i[2]
-        print(f"Total cart value is {total_cart_value}")
+    if user_input == "update":
+        sql_command = """SELECT * FROM user"""
+        list_of_users_to_update = my_cursor.execute(sql_command)
+        for x in my_cursor:
+            print(x)
+        selector_input = int(input("SELECT userID to update"))
+        user_found = False
+        new_list = []
+        for x in list_of_users_to_update:
+            if x[0] == selector_input:
+                user_found = True
+                new_list.append(x)
+        new_input_question = input("SELECT WHAT ATTRIBUTE YOU WANT TO CHANGE. Commands: username, password")
+        if new_input_question == 'username':
+            username_change_input = input("Create new username")
+            sql_command_username_change = """"""
+
 
 main()
-
